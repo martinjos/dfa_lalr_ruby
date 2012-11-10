@@ -69,14 +69,53 @@ def make_dfa(nfa)
     eliminate_blanks(nfa)
 
     dfa = {}
-    initial_state = '0' * nfa.size
-    initial_state[0] = '1'
+    initial_state = Set.new( [0] )
 
-    #make_dfa_rec(nfa, dfa, initial_state)
-    #return [dfa, initial_state]
+    build_dfa_rec(nfa, dfa, initial_state)
+    
+    return [dfa, initial_state]
 end
 
-def make_dfa_rec(nfa, dfa, state)
+class State
+    attr :lookup, true
+    attr :success, true
+end
+
+def build_dfa_rec(nfa, dfa, state)
+    return if dfa.has_key? state
+    dfa[state] = State.new
+    dfa[state].lookup = [nil] * 256
+    keys = get_dfa_keys(nfa, state)
+    if keys.member? "SUCCESS"
+        # my success shall live on...
+        dfa[state].success = keys["SUCCESS"]
+        keys.delete "SUCCESS"
+    end
+    keys.each do |ch|
+        next_state = get_dfa_state(nfa, state, ch)
+        dfa[state].lookup[ch.ord] = next_state
+        build_dfa_rec(nfa, dfa, next_state)
+    end
+end
+
+def get_dfa_state(nfa, state, ch)
+    new_state = Set.new
+    state.each do |idx|
+        if nfa[idx].has_key? ch
+            new_state += nfa[idx][ch]
+        end
+    end
+    return new_state
+end
+
+# N.B. this will return the SUCCESS key if applicable
+def get_dfa_keys(nfa, state)
+    # possibly eliminable inefficiency here
+    keys = Set.new
+    state.each do |idx|
+        keys += nfa[idx].keys
+    end
+    return keys
 end
 
 def eliminate_blanks(nfa)
@@ -94,8 +133,12 @@ def eliminate_blanks(nfa)
     # 2. when one of the end-states is done changing, the others will be too,
     #    and all will be removed in the normal course of things
 
-    # efficiency could probably be improved, by detecting when a state can never
-    # change again (only really possible with trees, though, I think)
+    # (compiler) efficiency could probably be improved, by detecting when a state
+    # can never change again (only really possible with trees, though, I think)
+
+    # actually, I think it might work with loops as well, as progress is bound to
+    # be stopped sooner or later when it runs out of new information.
+    # (also the basis of the current halting guarantee, of course.)
 
     begin
         changed = false
