@@ -64,12 +64,13 @@ def success(num)
 end
 
 def make_dfa(nfa)
-    dfa = {}
-    initial_state = '0' * nfa.size
-    initial_state[0] = '1'
 
     # blank transitions are unnecessary. get rid of them.
     eliminate_blanks(nfa)
+
+    dfa = {}
+    initial_state = '0' * nfa.size
+    initial_state[0] = '1'
 
     #make_dfa_rec(nfa, dfa, initial_state)
     #return [dfa, initial_state]
@@ -86,16 +87,21 @@ def eliminate_blanks(nfa)
         end
     end
 
+    #puts "with_blank is #{with_blank}"
+
     # this should be okay with alt(), because
     # 1. if one of the end-states should change, the others should too
     # 2. when one of the end-states is done changing, the others will be too,
     #    and all will be removed in the normal course of things
-    while !with_blank.empty?
-        puts "with_blank is #{with_blank}"
-        with_blank.reject! do |idx|
-            changed = false
+
+    # efficiency could probably be improved, by detecting when a state can never
+    # change again (only really possible with trees, though, I think)
+
+    begin
+        changed = false
+        with_blank.each do |idx|
             nfa[idx][''].each do |idx2|
-                puts "idx2 is #{idx2}"
+                #puts "idx2 is #{idx2}"
                 nfa[idx2].each_key do |key|
                     # N.B. this works with SUCCESS keys as well as character ones
                     if !nfa[idx].has_key? key
@@ -107,10 +113,10 @@ def eliminate_blanks(nfa)
                     end
                 end
             end
-            if !changed
-                nfa[idx].delete('')
-            end
-            !changed
         end
+    end while changed
+
+    with_blank.each do |idx|
+        nfa[idx].delete('')
     end
 end
