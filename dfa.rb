@@ -79,16 +79,22 @@ end
 class State
     attr :lookup, true
     attr :success, true
+    def initialize
+        self.lookup = {}
+        self.success = Set.new
+    end
+    def to_s
+        return "State { :lookup => #{lookup}, :success => #{success} }"
+    end
 end
 
 def build_dfa_rec(nfa, dfa, state)
     return if dfa.has_key? state
     dfa[state] = State.new
-    dfa[state].lookup = [nil] * 256
     keys = get_dfa_keys(nfa, state)
     if keys.member? "SUCCESS"
         # my success shall live on...
-        dfa[state].success = keys["SUCCESS"]
+        dfa[state].success = get_dfa_state(nfa, state, "SUCCESS")
         keys.delete "SUCCESS"
     end
     keys.each do |ch|
