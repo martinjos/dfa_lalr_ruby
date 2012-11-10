@@ -86,6 +86,14 @@ class State
     def to_s
         return "State { :lookup => #{lookup}, :success => #{success} }"
     end
+    def hash
+        # not sure whether to try to improve this
+        return lookup.hash + success.hash
+    end
+    def eql?(other)
+        return self.lookup == other.lookup &&
+            self.success == other.success
+    end
 end
 
 def build_dfa_rec(nfa, dfa, state)
@@ -101,6 +109,20 @@ def build_dfa_rec(nfa, dfa, state)
         next_state = get_dfa_state(nfa, state, ch)
         dfa[state].lookup[ch.ord] = next_state
         build_dfa_rec(nfa, dfa, next_state)
+    end
+    canonical_states = {}
+    renaming = {}
+    dfa.reject! do |key, value|
+        if canonical_states.has_key? value
+            renaming[key] = canonical_states[value]
+            true # reject!
+        else
+            canonical_states[value] = key
+            false # don't reject.
+        end
+    end
+    dfa.each do |key, value|
+        
     end
 end
 
