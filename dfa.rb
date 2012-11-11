@@ -14,7 +14,7 @@ end
 def range(first, last)
     return lambda do |pos|
         state = {}
-        (first.ord..last.ord).map{|x| x.chr}.each do |ch|
+        (first.ord..last.ord).map(&:chr).each do |ch|
             state[ch] = Set.new( [pos + 1] )
         end
         return [state]
