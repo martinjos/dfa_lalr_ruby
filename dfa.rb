@@ -4,6 +4,13 @@ def regexp(reg)
     return reg.call(0)
 end
 
+# may lead to loops in blank transition graph...(as may opt and star)
+def nothing
+    return lambda do |pos|
+        return []
+    end
+end
+
 def range(first, last)
     return lambda do |pos|
         state = {}
@@ -53,7 +60,8 @@ def alt(*list)
     end
 end
 
-def lots(reg)
+# used in the composition of star(reg)
+def plus(reg)
     return lambda do |pos|
         statelist = reg.call(pos)
         curpos = pos + statelist.size
@@ -61,6 +69,28 @@ def lots(reg)
         statelist << endstate
         return statelist
     end
+end
+
+# a bit more sparing of states than alt(reg, nothing)
+def opt(reg)
+    return lambda do |pos|
+        startstate = { '' => Set.new }
+
+        statelist = [startstate]
+        curpos = pos + statelist.size
+
+        statelist += reg.call(curpos)
+        curpos = pos + statelist.size
+
+        startstate[''] << curpos
+
+        return statelist
+    end
+end
+
+# AFAIK star effectively has to be implemented this way anyway
+def star(reg)
+    return opt(plus(reg))
 end
 
 def success(num)
