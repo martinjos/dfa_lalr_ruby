@@ -23,7 +23,7 @@ def make_dfa(nfa)
 
     canonicalise_dfa(dfa)
     
-    return [dfa, initial_state]
+    return dfa
 end
 
 def canonicalise_dfa(dfa)
