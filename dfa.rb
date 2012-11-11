@@ -74,7 +74,7 @@ end
 # a bit more sparing of states than alt(reg, nothing)
 def opt(reg)
     return lambda do |pos|
-        startstate = { '' => Set.new }
+        startstate = { '' => Set.new( [pos + 1] ) }
 
         statelist = [startstate]
         curpos = pos + statelist.size
@@ -89,14 +89,34 @@ def opt(reg)
 end
 
 # AFAIK star effectively has to be implemented this way anyway
+# This does end up with effectively a redundant state. However,
+# AFAICT there is no way to change this without changing the
+# way that the regexp is constructed.
+# It will all be cleaned up anyway in conversion to a DFA (or
+# one of the preliminary steps).
 def star(reg)
     return opt(plus(reg))
 end
 
-def success(num)
+def success(sym)
     return lambda do |pos|
-        return [ { 'SUCCESS' => Set.new( [num] ) } ]
+        return [ { 'SUCCESS' => Set.new( [sym] ) } ]
     end
+end
+
+def show_nfa(nfa)
+    nfa.each_with_index do |x,i|
+        puts "#{i}: #{x}"
+    end
+    return nil
+end
+
+def show_dfa(dfa)
+    dfa.each do |i, x|
+        # for some reason Set overrides "inspect" instead of to_s...
+        puts "#{i.inspect}: #{x}"
+    end
+    return nil
 end
 
 def make_dfa(nfa)
@@ -104,12 +124,47 @@ def make_dfa(nfa)
     # blank transitions are unnecessary. get rid of them.
     eliminate_blanks(nfa)
 
+    # possibly canonicalise NFA before building DFA?
+    # (could reduce state explosion ?)
+
     dfa = {}
     initial_state = Set.new( [0] )
 
     build_dfa_rec(nfa, dfa, initial_state)
+
+    canonicalise_dfa(dfa)
     
     return [dfa, initial_state]
+end
+
+def canonicalise_dfa(dfa)
+    begin
+        puts "Canonicalisation step"
+
+        changed = false
+        canonical_states = {}
+        renaming = {}
+
+        dfa.reject! do |key, value|
+            if canonical_states.has_key? value
+                renaming[key] = canonical_states[value]
+                true # reject!
+            else
+                canonical_states[value] = key
+                false # don't reject.
+            end
+        end
+
+        # each value is a State object
+        dfa.each do |key, value|
+            value.lookup.each do |ch, other_state|
+                if renaming.has_key? other_state
+                    value.lookup[ch] = renaming[other_state]
+                    changed = true
+                end
+            end
+        end
+    end while changed
 end
 
 class State
@@ -120,7 +175,7 @@ class State
         self.success = Set.new
     end
     def to_s
-        return "State { :lookup => #{lookup}, :success => #{success} }"
+        return "State { :lookup => #{lookup}, :success => #{success.inspect} }"
     end
     def hash
         # not sure whether to try to improve this
@@ -143,22 +198,8 @@ def build_dfa_rec(nfa, dfa, state)
     end
     keys.each do |ch|
         next_state = get_dfa_state(nfa, state, ch)
-        dfa[state].lookup[ch.ord] = next_state
+        dfa[state].lookup[ch] = next_state
         build_dfa_rec(nfa, dfa, next_state)
-    end
-    canonical_states = {}
-    renaming = {}
-    dfa.reject! do |key, value|
-        if canonical_states.has_key? value
-            renaming[key] = canonical_states[value]
-            true # reject!
-        else
-            canonical_states[value] = key
-            false # don't reject.
-        end
-    end
-    dfa.each do |key, value|
-        
     end
 end
 
@@ -205,6 +246,8 @@ def eliminate_blanks(nfa)
     # (also the basis of the current halting guarantee, of course.)
 
     begin
+        puts "Blank elimination step"
+
         changed = false
         with_blank.each do |idx|
             nfa[idx][''].each do |idx2|
