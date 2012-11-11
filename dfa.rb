@@ -1,5 +1,9 @@
 require 'set'
 
+def regexp(reg)
+    return reg.call(0)
+end
+
 def range(first, last)
     return lambda do |pos|
         state = {}
@@ -34,10 +38,12 @@ end
 # (breaking this assumption will result in problems)
 def alt(*list)
     return lambda do |pos|
-        statelist = []
+        startstate = { '' => Set.new }
+        statelist = [startstate]
         endstate = { '' => Set.new }
-        curpos = pos
+        curpos = pos + statelist.size
         list.each do |item|
+            startstate[''] << curpos
             statelist += item.call(curpos)
             statelist << endstate
             curpos = pos + statelist.size
