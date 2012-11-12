@@ -1,0 +1,15 @@
+Regexp_lalr = {
+    :Alt => [[:Seq],
+             [:Alt, "|", :Seq]],
+    :Seq => [[],
+             [:Seq, :Atom]],
+    :Atom => [[:char],
+              ["[", :ClassList, "]"],
+              ["[", "^", :ClassList, "]"],
+              ["(", :Alt, ")"],
+              [:Atom, :unary_op]],
+    :ClassList => [[],
+                   [:ClassList, :ClassItem]],
+    :ClassItem => [[:char],
+                   [:char, "-", :char]],
+}
