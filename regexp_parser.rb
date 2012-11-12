@@ -1,4 +1,4 @@
-Regexp_lalr = {
+Regexp_lalr = ParserDesc.new({
     :Alt => [[:Seq],
              [:Alt, "|", :Seq]],
     :Seq => [[],
@@ -12,4 +12,4 @@ Regexp_lalr = {
                    [:ClassList, :ClassItem]],
     :ClassItem => [[:char],
                    [:char, "-", :char]],
-}
+})
