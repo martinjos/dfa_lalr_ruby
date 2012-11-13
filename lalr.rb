@@ -170,24 +170,25 @@ class ParserDesc < Hash
         if desc.has_key? :_Start
             raise LalrCompileError, "LALR description already contains :_Start token (used internally)"
         end
-        self.init desc
+        self.add_rule :_Start, [[@start_symbol]]
+        self.add_rules desc
+        @start_rule = self[:_Start][0]
+    end
+
+    def add_rule(nonterminal, expansions)
+        if !nonterminal.non_terminal?
+            raise LalrCompileError, "Non-terminal symbol #{nonterminal} should be in CamelCase (Bactrian, not dromeDary)"
+        end
+        expansions.each do |exp|
+            if !self.has_key? nonterminal
+                self[nonterminal] = []
+            end
+            self[nonterminal] << Rule.new(nonterminal, exp)
+        end
     end
     
-    def init(desc)
-        p = proc do |nonterminal, expansions|
-            if !nonterminal.non_terminal?
-                raise LalrCompileError, "Non-terminal symbol #{nonterminal} should be in CamelCase (Bactrian, not dromeDary)"
-            end
-            expansions.each do |exp|
-                if !self.has_key? nonterminal
-                    self[nonterminal] = []
-                end
-                self[nonterminal] << Rule.new(nonterminal, exp)
-            end
-        end
-        p.call :_Start, [[@start_symbol]]
-        desc.each &p
-        @start_rule = self[:_Start][0]
+    def add_rules(desc)
+        desc.each { |x, y| self.add_rule(x, y) }
     end
 
     def compile
