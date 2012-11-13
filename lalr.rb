@@ -81,11 +81,10 @@ end
 class ReduceRule
     attr :nterm
     attr :size
-    attr :next
-    def initialize(nterm, size, nxt)
+    attr :next, true
+    def initialize(nterm, size)
         @nterm = nterm
         @size = size
-        @next = nxt
     end
 end
 
@@ -135,7 +134,8 @@ class ParserState < Set
         if !all.has_key? self
             all[self] = self
         end
-        return all[self].compile_traverse(all, stack)
+        all[self].compile_traverse(all, stack)
+        return all[self]
     end
 
     def compile_traverse(all, stack)
@@ -143,20 +143,25 @@ class ParserState < Set
         red = self.reductions
         raise LalrCompileError, "Reduce-reduce conflict" if red.size > 1
         self.shift_keys.each do |key|
-            #puts " " * (stack.size-1) + "Shift"
+            #puts " " * (stack.size-1) + "Shift #{key.is_a?(String) ? key : "(#{key})"}"
             @shift_tab[key] = self.shift(key).compile_rec(all, stack)
         end
         if red.size > 0
-            #puts " " * (stack.size-1) + "Reduce"
             parent_pos = -red[0].exp.size - 1
             parent = stack[parent_pos]
-            next_state = parent.shift(red[0].nterm).compile_rec(all, stack[0 .. parent_pos])
-            @reduce_tab[parent] = ReduceRule.new(red[0].nterm, red[0].exp.size, next_state)
+            if !@reduce_tab.has_key?(parent)
+                #puts " " * (stack.size-1) + "Reduce (#{red[0].nterm})"
+                # N.B: this is needed here to guard against infinite recursion
+                @reduce_tab[parent] = ReduceRule.new(red[0].nterm, red[0].exp.size)
+                next_state = parent.shift(red[0].nterm).compile_rec(all, stack[0 .. parent_pos])
+                @reduce_tab[parent].next = next_state
+            else
+                #puts " " * (stack.size-1) + "Guarded against reduction (#{red[0].nterm})"
+            end
         end
         if !@shift_tab.empty? && !@reduce_tab.empty?
             @desc.have_sr_conflict = true
         end
-        return self
     end
 
     def shiftables(key)
