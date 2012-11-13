@@ -4,20 +4,32 @@ class Symbol
     # terminals - dromeDary camelCase or lower_case
     # I actually prefer to use lower_case for this, but I only
     # check the first character to leave dromeDary as an option.
-    def dromedary?
+    def terminal?
         self[0] == self[0].downcase
     end
 
     # labels - BLOCK_CAPS
-    def block_caps?
+    def label?
         self == self.upcase
     end
 
     # non-terminals - Bactrian CamelCase
     # Made this strictly Bactrian - I think it's important that non-terminals
     # should be distinguishable from labels.
-    def bactrian?
+    def non_terminal?
         self[0] == self[0].upcase && self != self.upcase
+    end
+end
+
+class String
+    def terminal?
+        true
+    end
+    def label?
+        false
+    end
+    def non_terminal?
+        false
     end
 end
 
@@ -79,7 +91,7 @@ class ParserState < Set
                         end
                     end
                 else
-                    if !nextsym.dromedary?
+                    if !nextsym.terminal?
                         raise LalrCompileError.new("Terminal symbol #{nextsym} should be in lower_case")
                     end
                 end
@@ -93,7 +105,7 @@ class ParserState < Set
     def can_shift?
         self.each do |rulestate|
             return true if rulestate.pos < rulestate.exp.size &&
-                rulestate.exp[rulestate.pos].dromedary?
+                rulestate.exp[rulestate.pos].terminal?
         end
         return false
     end
@@ -112,11 +124,15 @@ class ParserState < Set
         end
     end
 
-    def shift(fdesc)
+    def shift_keys
+        
+    end
+
+    def shift(fdesc, key)
         new_state = ParserState.new
         self.each do |rulestate|
              if rulestate.pos < rulestate.exp.size &&
-                     rulestate.exp[rulestate.pos].dromedary?
+                     rulestate.exp[rulestate.pos].terminal?
                  new_rulestate = RuleState.new(rulestate.rule, rulestate.pos + 1)
                  new_state.add new_rulestate
              end
@@ -146,7 +162,7 @@ class ParserDesc < Hash
     def flatten(start_token)
         flat_desc = ParserDesc.new({ :_Start => [Rule.new(:_Start, [start_token])] })
         self.each do |nonterminal, expansions|
-            if !nonterminal.bactrian?
+            if !nonterminal.non_terminal?
                 raise LalrCompileError, "Non-terminal symbol #{nonterminal} should be in CamelCase (Bactrian, not dromeDary)"
             end
             expansions.each do |exp|
