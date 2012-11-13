@@ -119,16 +119,18 @@ class ParserState < Set
         red = self.reductions
         raise LalrCompileError, "Reduce-reduce conflict" if red.size > 1
         all << self
+        stack += [self] # N.B: creates new Array object
         self.shift_keys.each do |key|
-            puts " " * stack.size + "Shift"
+            puts " " * (stack.size-1) + "Shift"
             @shift_tab[key] = self.shift(key)
-            @shift_tab[key].compile all, stack + [self]
+            @shift_tab[key].compile all, stack
         end
         if red.size > 0
-            puts " " * stack.size + "Reduce"
-            parent = stack[-red[0].exp.size]
-            @reduce_tab[parent] = parent.shift(red[0].nterm)
-            @reduce_tab[parent].compile all, stack[0 .. -red[0].exp.size]
+            puts " " * (stack.size-1) + "Reduce"
+            parent_pos = -red[0].exp.size - 1
+            parent = stack[parent_pos]
+            @reduce_tab[parent] = [parent.shift(red[0].nterm), red[0].exp.size, red[0].nterm]
+            @reduce_tab[parent][0].compile all, stack[0 .. parent_pos]
         end
         if !@shift_tab.empty? && !@reduce_tab.empty?
             @desc.have_sr_conflict = true
