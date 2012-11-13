@@ -78,6 +78,17 @@ class RuleState
     end
 end
 
+class ReduceRule
+    attr :nterm
+    attr :size
+    attr :next
+    def initialize(nterm, size, nxt)
+        @nterm = nterm
+        @size = size
+        @next = nxt
+    end
+end
+
 class ParserState < Set
 
     attr :shift_tab
@@ -121,16 +132,16 @@ class ParserState < Set
         all << self
         stack += [self] # N.B: creates new Array object
         self.shift_keys.each do |key|
-            puts " " * (stack.size-1) + "Shift"
+            #puts " " * (stack.size-1) + "Shift"
             @shift_tab[key] = self.shift(key)
             @shift_tab[key].compile all, stack
         end
         if red.size > 0
-            puts " " * (stack.size-1) + "Reduce"
+            #puts " " * (stack.size-1) + "Reduce"
             parent_pos = -red[0].exp.size - 1
             parent = stack[parent_pos]
-            @reduce_tab[parent] = [parent.shift(red[0].nterm), red[0].exp.size, red[0].nterm]
-            @reduce_tab[parent][0].compile all, stack[0 .. parent_pos]
+            @reduce_tab[parent] = ReduceRule.new(red[0].nterm, red[0].exp.size, parent.shift(red[0].nterm))
+            @reduce_tab[parent].next.compile all, stack[0 .. parent_pos]
         end
         if !@shift_tab.empty? && !@reduce_tab.empty?
             @desc.have_sr_conflict = true
