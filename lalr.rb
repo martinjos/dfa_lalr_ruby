@@ -88,7 +88,7 @@ class ReduceRule
     end
 end
 
-class ParserState < Set
+class ParserContext < Set
 
     attr :shift_tab
     attr :reduce_tab
@@ -205,7 +205,7 @@ class ParserState < Set
     end
 
     def shift(key)
-        new_state = ParserState.new @desc
+        new_state = ParserContext.new @desc
         self.shiftables(key).each {|rs|
             new_state.add RuleState.new(rs.rule, rs.pos + 1)
         }
@@ -256,7 +256,7 @@ class ParserDesc < Hash
     end
 
     def compile
-        start_state = ParserState.new( self, [RuleState.new(@start_rule, 0)] )
+        start_state = ParserContext.new( self, [RuleState.new(@start_rule, 0)] )
         all_states = start_state.compile
         return [start_state, all_states]
     end
