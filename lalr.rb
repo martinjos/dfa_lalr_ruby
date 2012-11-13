@@ -132,8 +132,13 @@ class ParserState < Set
 
     def compile_rec(all, stack=[])
         self.complete
-        return all[self] if all.has_key? self
-        all[self] = self
+        if !all.has_key? self
+            all[self] = self
+        end
+        return all[self].compile_traverse(all, stack)
+    end
+
+    def compile_traverse(all, stack)
         stack += [self] # N.B: creates new Array object
         red = self.reductions
         raise LalrCompileError, "Reduce-reduce conflict" if red.size > 1
@@ -151,7 +156,7 @@ class ParserState < Set
         if !@shift_tab.empty? && !@reduce_tab.empty?
             @desc.have_sr_conflict = true
         end
-        return all[self]
+        return self
     end
 
     def shiftables(key)
