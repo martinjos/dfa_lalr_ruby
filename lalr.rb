@@ -82,6 +82,8 @@ class ParserState < Set
 
     def initialize(desc, elems=[])
         @desc = desc
+        @shift_tab = {}
+        @reduce_tab = {}
         super(elems)
     end
     
@@ -108,22 +110,34 @@ class ParserState < Set
         end
     end
 
-    def compile(all, stack=[])
+    def compile(all=Set.new, stack=[])
+        self.complete
+        return all if all.include? self
+        all << self
+        self.shift_keys.each do |key|
+            self.shiftables(key).each do |rs|
+            end
+        end
+        return all
+    end
+
+    def shiftables(key)
+        return self.select {|rs|
+            rs.pos < rs.exp.size &&
+                rs.exp[rs.pos] == key
+        }
     end
 
     # can_shift? and num_reductions:
     # may want to cache the results at some point
-    
+
     def can_shift?
-        # it would be nice if Set had something that could be used
-        # like this directly (maybe a block version of include? ?...)
+        # it would be nice if Set had something like
+        # self.include? {|x| ...}
         # (I know that would not benefit from O(1) efficiency, but
         # it would be better than this...
         # It could be present on array as well.)
-        return !self.select {|rs|
-            rs.pos < rs.exp.size &&
-                rs.exp[rs.pos].terminal?
-        }.empty?
+        return !shift_keys.empty?
     end
 
     def num_reductions
@@ -149,10 +163,7 @@ class ParserState < Set
 
     def shift(key)
         new_state = ParserState.new @desc
-        self.select {|rs|
-            rs.pos < rs.exp.size &&
-                rs.exp[rs.pos] == key
-        }.each {|rs|
+        self.shiftables(key).each {|rs|
             new_state.add RuleState.new(rs.rule, rs.pos + 1)
         }
         new_state.complete
@@ -201,8 +212,7 @@ class ParserDesc < Hash
 
     def compile
         start_state = ParserState.new( self, [RuleState.new(@start_rule, 0)] )
-        start_state.complete
-        
-        return start_state
+        all_states = start_state.compile
+        return [start_state, all_states]
     end
 end
