@@ -1,4 +1,4 @@
-Regexp_lalr = ParserDesc.new :Alt => {
+RegexpLALR = ParserDesc.new :Alt => {
     :Alt => [[:Seq],
              [:Alt, "|", :Seq]],
     :Seq => [[],

@@ -166,35 +166,33 @@ class ParserDesc < Hash
             raise LalrCompileError, "Usage: ParserDesc.new :StartSymbol => { <parser-description> }"
         end
         @start_symbol = hash.keys[0]
-        self.merge! hash[@start_symbol]
+        desc = hash[@start_symbol]
+        if desc.has_key? :_Start
+            raise LalrCompileError, "LALR description already contains :_Start token (used internally)"
+        end
+        self.init desc
     end
     
-    # in effect, this is just augmenting each (sub-)rule with its nonterminal...
-    # I may rethink this at some point
-    def flatten
-        flat_desc = ParserDesc.new(@start_symbol => { :_Start => [Rule.new(:_Start, [@start_symbol])] })
-        self.each do |nonterminal, expansions|
+    def init(desc)
+        p = proc do |nonterminal, expansions|
             if !nonterminal.non_terminal?
                 raise LalrCompileError, "Non-terminal symbol #{nonterminal} should be in CamelCase (Bactrian, not dromeDary)"
             end
             expansions.each do |exp|
-                if !flat_desc.has_key? nonterminal
-                    flat_desc[nonterminal] = []
+                if !self.has_key? nonterminal
+                    self[nonterminal] = []
                 end
-                flat_desc[nonterminal] << Rule.new(nonterminal, exp)
+                self[nonterminal] << Rule.new(nonterminal, exp)
             end
         end
-        return flat_desc
+        p.call :_Start, [[@start_symbol]]
+        desc.each &p
+        @start_rule = self[:_Start][0]
     end
 
     def compile
-        if self.has_key? :_Start
-            raise LalrCompileError, "LALR description already contains :_Start token (used internally)"
-        end
-        fdesc = self.flatten
-        start_rule = fdesc[:_Start][0]
-        start_state = ParserState.new( [RuleState.new(start_rule, 0)] )
-        start_state.complete(fdesc)
+        start_state = ParserState.new( [RuleState.new(@start_rule, 0)] )
+        start_state.complete(self)
         return start_state
     end
 end
