@@ -125,30 +125,35 @@ class ParserState < Set
     end
 
     def shift_keys
-        
+        keys = Set.new
+        self.each do |rulestate|
+            if rulestate.pos < rulestate.exp.size &&
+                    rulestate.exp[rulestate.pos].terminal?
+                keys << rulestate.exp[rulestate.pos]
+            end
+        end
+        return keys
     end
 
     def shift(fdesc, key)
         new_state = ParserState.new
         self.each do |rulestate|
-             if rulestate.pos < rulestate.exp.size &&
-                     rulestate.exp[rulestate.pos].terminal?
-                 new_rulestate = RuleState.new(rulestate.rule, rulestate.pos + 1)
-                 new_state.add new_rulestate
-             end
+            if rulestate.pos < rulestate.exp.size &&
+                    rulestate.exp[rulestate.pos] == key
+                new_rulestate = RuleState.new(rulestate.rule, rulestate.pos + 1)
+                new_state.add new_rulestate
+            end
         end
         new_state.complete(fdesc)
         return new_state
     end
 
-    def reduce
+    def reduce(fdesc)
         r = reductions
         raise LalrCompileError, "Cannot reduce" if r.size == 0
         raise LalrCompileError, "Reduce-reduce conflict" if r.size > 1
-        new_state = ParserState.new
-        # TODO: implement
-        # Actually, I'm not sure this is really the right way to go about this...
-        return new_state
+        r = r[0]
+        return shift(fdesc, r.nterm) # hehe! shift == reduce! all connected is, little one...
     end
 end
 
