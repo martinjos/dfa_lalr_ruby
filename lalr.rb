@@ -106,10 +106,15 @@ class ParserState < Set
     # may want to cache the results at some point
     
     def can_shift?
-        return nil != self.to_a.index {|rs|
+        # it would be nice if Set had something that could be used
+        # like this directly (maybe a block version of include? ?...)
+        # (I know that would not benefit from O(1) efficiency, but
+        # it would be better than this...
+        # It could be present on array as well.)
+        return !self.select {|rs|
             rs.pos < rs.exp.size &&
                 rs.exp[rs.pos].terminal?
-        }
+        }.empty?
     end
 
     def num_reductions
