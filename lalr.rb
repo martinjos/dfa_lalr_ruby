@@ -79,14 +79,20 @@ class RuleState
 end
 
 class ParserState < Set
-    def complete(fdesc)
+
+    def initialize(desc, elems=[])
+        @desc = desc
+        super(elems)
+    end
+    
+    def complete
         list = self.to_a
         while rs = list.shift
             if rs.pos < rs.exp.size
                 nextsym = rs.exp[rs.pos]
-                if fdesc.has_key? nextsym
+                if @desc.has_key? nextsym
                     # already checked that these are Bactrian
-                    fdesc[nextsym].each do |rule|
+                    @desc[nextsym].each do |rule|
                         nrs = RuleState.new(rule, 0)
                         if !self.include? nrs
                             list << nrs
@@ -100,6 +106,9 @@ class ParserState < Set
                 end
             end
         end
+    end
+
+    def compile(all, stack=[])
     end
 
     # can_shift? and num_reductions:
@@ -138,24 +147,24 @@ class ParserState < Set
         }
     end
 
-    def shift(fdesc, key)
-        new_state = ParserState.new
+    def shift(key)
+        new_state = ParserState.new @desc
         self.select {|rs|
             rs.pos < rs.exp.size &&
                 rs.exp[rs.pos] == key
         }.each {|rs|
             new_state.add RuleState.new(rs.rule, rs.pos + 1)
         }
-        new_state.complete(fdesc)
+        new_state.complete
         return new_state
     end
 
-    def reduce(fdesc)
+    def reduce
         r = reductions
         raise LalrCompileError, "Cannot reduce" if r.size == 0
         raise LalrCompileError, "Reduce-reduce conflict" if r.size > 1
         r = r[0]
-        return shift(fdesc, r.nterm) # hehe! shift == reduce! all connected is, little one...
+        return shift(r.nterm) # hehe! shift == reduce! all connected is, little one...
     end
 end
 
@@ -191,8 +200,8 @@ class ParserDesc < Hash
     end
 
     def compile
-        start_state = ParserState.new( [RuleState.new(@start_rule, 0)] )
-        start_state.complete(self)
+        start_state = ParserState.new( self, [RuleState.new(@start_rule, 0)] )
+        start_state.complete
         
         return start_state
     end
