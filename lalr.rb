@@ -80,6 +80,9 @@ end
 
 class ParserState < Set
 
+    attr :shift_tab
+    attr :reduce_tab
+
     def initialize(desc, elems=[])
         @desc = desc
         @shift_tab = {}
@@ -113,10 +116,22 @@ class ParserState < Set
     def compile(all=Set.new, stack=[])
         self.complete
         return all if all.include? self
+        red = self.reductions
+        raise LalrCompileError, "Reduce-reduce conflict" if red.size > 1
         all << self
         self.shift_keys.each do |key|
-            self.shiftables(key).each do |rs|
-            end
+            puts " " * stack.size + "Shift"
+            @shift_tab[key] = self.shift(key)
+            @shift_tab[key].compile all, stack + [self]
+        end
+        if red.size > 0
+            puts " " * stack.size + "Reduce"
+            parent = stack[-red[0].exp.size]
+            @reduce_tab[parent] = parent.shift(red[0].nterm)
+            @reduce_tab[parent].compile all, stack[0 .. -red[0].exp.size]
+        end
+        if !@shift_tab.empty? && !@reduce_tab.empty?
+            @desc.have_sr_conflict = true
         end
         return all
     end
@@ -166,7 +181,6 @@ class ParserState < Set
         self.shiftables(key).each {|rs|
             new_state.add RuleState.new(rs.rule, rs.pos + 1)
         }
-        new_state.complete
         return new_state
     end
 
@@ -180,6 +194,9 @@ class ParserState < Set
 end
 
 class ParserDesc < Hash
+
+    attr :have_sr_conflict, true
+    
     def initialize(hash)
         if hash.size != 1
             raise LalrCompileError, "Usage: ParserDesc.new :StartSymbol => { <parser-description> }"
