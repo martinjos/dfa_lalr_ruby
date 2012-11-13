@@ -124,29 +124,34 @@ class ParserState < Set
         end
     end
 
-    def compile(all=Set.new, stack=[])
+    def compile
+        allhash = {}
+        self.compile_rec(allhash)
+        return Set.new( allhash.keys )
+    end
+
+    def compile_rec(all, stack=[])
         self.complete
-        return all if all.include? self
+        return all[self] if all.has_key? self
+        all[self] = self
+        stack += [self] # N.B: creates new Array object
         red = self.reductions
         raise LalrCompileError, "Reduce-reduce conflict" if red.size > 1
-        all << self
-        stack += [self] # N.B: creates new Array object
         self.shift_keys.each do |key|
             #puts " " * (stack.size-1) + "Shift"
-            @shift_tab[key] = self.shift(key)
-            @shift_tab[key].compile all, stack
+            @shift_tab[key] = self.shift(key).compile_rec(all, stack)
         end
         if red.size > 0
             #puts " " * (stack.size-1) + "Reduce"
             parent_pos = -red[0].exp.size - 1
             parent = stack[parent_pos]
-            @reduce_tab[parent] = ReduceRule.new(red[0].nterm, red[0].exp.size, parent.shift(red[0].nterm))
-            @reduce_tab[parent].next.compile all, stack[0 .. parent_pos]
+            next_state = parent.shift(red[0].nterm).compile_rec(all, stack[0 .. parent_pos])
+            @reduce_tab[parent] = ReduceRule.new(red[0].nterm, red[0].exp.size, next_state)
         end
         if !@shift_tab.empty? && !@reduce_tab.empty?
             @desc.have_sr_conflict = true
         end
-        return all
+        return all[self]
     end
 
     def shiftables(key)
