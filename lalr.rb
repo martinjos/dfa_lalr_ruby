@@ -106,47 +106,41 @@ class ParserState < Set
     # may want to cache the results at some point
     
     def can_shift?
-        self.each do |rulestate|
-            return true if rulestate.pos < rulestate.exp.size &&
-                rulestate.exp[rulestate.pos].terminal?
-        end
-        return false
+        return nil != self.to_a.index {|rs|
+            rs.pos < rs.exp.size &&
+                rs.exp[rs.pos].terminal?
+        }
     end
 
     def num_reductions
-        num = 0
-        self.each do |rulestate|
-            num += rulestate.pos == rulestate.exp.size ? 1 : 0
-        end
-        return num
+        return self.map {|rs|
+            rs.pos == rs.exp.size ? 1 : 0
+        }.inject(&:+)
     end
 
     def reductions
-        return self.select do |rulestate|
-            rulestate.pos == rulestate.exp.size
-        end
+        return self.select {|rs|
+            rs.pos == rs.exp.size
+        }
     end
 
     def shift_keys
-        keys = Set.new
-        self.each do |rulestate|
-            if rulestate.pos < rulestate.exp.size &&
-                    rulestate.exp[rulestate.pos].terminal?
-                keys << rulestate.exp[rulestate.pos]
-            end
-        end
-        return keys
+        return Set.new self.select {|rs|
+            rs.pos < rs.exp.size &&
+                rs.exp[rs.pos].terminal?
+        }.map {|rs|
+            rs.exp[rs.pos]
+        }
     end
 
     def shift(fdesc, key)
         new_state = ParserState.new
-        self.each do |rulestate|
-            if rulestate.pos < rulestate.exp.size &&
-                    rulestate.exp[rulestate.pos] == key
-                new_rulestate = RuleState.new(rulestate.rule, rulestate.pos + 1)
-                new_state.add new_rulestate
-            end
-        end
+        self.select {|rs|
+            rs.pos < rs.exp.size &&
+                rs.exp[rs.pos] == key
+        }.each {|rs|
+            new_state.add RuleState.new(rs.rule, rs.pos + 1)
+        }
         new_state.complete(fdesc)
         return new_state
     end
@@ -168,7 +162,7 @@ class ParserDesc < Hash
         @start_symbol = hash.keys[0]
         desc = hash[@start_symbol]
         if desc.has_key? :_Start
-            raise LalrCompileError, "LALR description already contains :_Start token (used internally)"
+            raise LalrCompileError, "Parser description already contains :_Start non-terminal (used internally)"
         end
         self.add_rule :_Start, [[@start_symbol]]
         self.add_rules desc
@@ -194,6 +188,7 @@ class ParserDesc < Hash
     def compile
         start_state = ParserState.new( [RuleState.new(@start_rule, 0)] )
         start_state.complete(self)
+        
         return start_state
     end
 end
