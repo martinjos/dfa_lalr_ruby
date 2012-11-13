@@ -10,7 +10,7 @@ class LexError < StandardError
     end
 end
 
-def lex(dfa, duck)
+def _get_lexer(dfa, duck)
     start_state = Set.new( [0] )
     state = start_state
     str = ""
@@ -34,7 +34,7 @@ def lex(dfa, duck)
     # backtracking along the way, plus "" to finish off.
     # (no "" transitions can survive compilation)
     p = proc do |ch|
-        puts "At position #{pos}"
+        #puts "At position #{pos}"
         success = dfa[state].success
         if !success.empty?
             last_success = success
@@ -62,13 +62,33 @@ def lex(dfa, duck)
     end
 
     size = duck.size
+
+    lex_cmd = lambda do
+        if pos < size
+            p.call(duck[pos])
+        else
+            p.call("")
+        end
+    end
+
+    return lex_cmd
+end
+
+def get_lexer(dfa, duck)
+    lex_cmd = _get_lexer(dfa, duck)
+    return lambda do
+        catch :done do
+            return lex_cmd.call
+        end
+        return nil
+    end
+end
+
+def lex(dfa, duck, &block)
+    lex_cmd = _get_lexer(dfa, duck, &block)
     catch :done do
         while true
-            if pos < size
-                p.call(duck[pos])
-            else
-                p.call("")
-            end
+            lex_cmd.call
         end
     end
 end

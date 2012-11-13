@@ -28,7 +28,7 @@ end
 
 def canonicalise_dfa(dfa)
     begin
-        puts "Canonicalisation step"
+        #puts "Canonicalisation step"
 
         changed = false
         canonical_states = {}
@@ -135,7 +135,7 @@ def eliminate_blanks(nfa)
     # (also the basis of the current halting guarantee, of course.)
 
     begin
-        puts "Blank elimination step"
+        #puts "Blank elimination step"
 
         changed = false
         with_blank.each do |idx|
