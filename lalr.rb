@@ -1,19 +1,23 @@
 require 'set'
 
 class Symbol
+    # terminals - dromeDary camelCase or lower_case
     # I actually prefer to use lower_case for this, but I only
     # check the first character to leave dromeDary as an option.
     def dromedary?
-        self[0] == self.downcase[0]
+        self[0] == self[0].downcase
     end
 
+    # labels - BLOCK_CAPS
     def block_caps?
         self == self.upcase
     end
 
-    # This will also match BLOCK_CAPS, but it doesn't matter.
+    # non-terminals - Bactrian CamelCase
+    # Made this strictly Bactrian - I think it's important that non-terminals
+    # should be distinguishable from labels.
     def bactrian?
-        self[0] == self[0].upcase
+        self[0] == self[0].upcase && self != self.upcase
     end
 end
 
@@ -83,7 +87,7 @@ class ParserState < Set
         end
     end
 
-    # can_shift? and num_reduce:
+    # can_shift? and num_reductions:
     # may want to cache the results at some point
     
     def can_shift?
