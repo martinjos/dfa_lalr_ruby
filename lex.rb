@@ -10,85 +10,88 @@ class LexError < StandardError
     end
 end
 
-def _get_lexer(dfa, duck)
-    start_state = Set.new( [0] )
-    state = start_state
-    str = ""
-    pos = 0
-    last_success = nil
-    last_str = nil
-    last_pos = nil
+class Lexer
+    def initialize(dfa, duck)
+        @dfa = dfa
+        @duck = duck
+        @size = duck.size
+        @start_state = Set.new( [0] )
+        @state = @start_state
+        @str = ""
+        @pos = 0
+        @last_success = nil
+        @last_str = nil
+        @last_pos = nil
+    end
 
-    yield_success = proc do |su, s, p|
+    def success(su, s, p)
         if su.size == 1
-            yield su.first, s, p
+            retsym = su.first
         else
-            yield su, s, p
+            retsym = su
         end
-        state = start_state
-        str = ""
-        last_success = nil # don't bother clearing last_str or last_pos
+        @state = @start_state
+        @str = ""
+        @last_success = nil # don't bother clearing last_str or last_pos
+        return [retsym, s, p]
     end
 
     # will need to yield everything from duck, possibly
     # backtracking along the way, plus "" to finish off.
     # (no "" transitions can survive compilation)
-    p = proc do |ch|
-        #puts "At position #{pos}"
-        success = dfa[state].success
+    def progress_input(ch)
+        #puts "At position #{@pos}"
+        success = @dfa[@state].success
         if !success.empty?
-            last_success = success
-            last_str = str
-            last_pos = pos
+            @last_success = success
+            @last_str = @str
+            @last_pos = @pos
         end
-        next_state = dfa[state].lookup[ch]
+        next_state = @dfa[@state].lookup[ch]
         if next_state.nil?
-            if last_success.nil?
-                if str.empty? && pos == duck.size && state == start_state
+            if @last_success.nil?
+                if @str.empty? && @pos == @size && @state == @start_state
                     throw :done
                 else
-                    #puts "#{str} #{pos} #{duck.size} #{state.inspect} #{start_state.inspect}"
-                    raise LexError.new(pos, duck.size)
+                    #puts "#{@str} #{@pos} #{@size} #{@state.inspect} #{@start_state.inspect}"
+                    raise LexError.new(@pos, @size)
                 end
             else
-                yield_success.call last_success, last_str, last_pos
-                pos = last_pos
+                @pos = @last_pos
+                return success(@last_success, @last_str, @last_pos)
             end
         else
-            state = next_state
-            str += ch
-            pos += 1
+            @state = next_state
+            @str += ch
+            @pos += 1
+            return nil
         end
     end
 
-    size = duck.size
-
-    lex_cmd = lambda do
-        if pos < size
-            p.call(duck[pos])
+    def progress
+        if @pos < @size
+            return progress_input(@duck[@pos])
         else
-            p.call("")
+            return progress_input("")
         end
     end
 
-    return lex_cmd
-end
-
-def get_lexer(dfa, duck)
-    lex_cmd = _get_lexer(dfa, duck)
-    return lambda do
+    # not sure how efficient it is to be continually putting up/tearing down
+    # this catch
+    def next
         catch :done do
-            return lex_cmd.call
+            while !(info = progress)
+                # do nothing - waiting for token
+            end
+            return info # got token
         end
-        return nil
+        return nil # got end of sequence
     end
 end
 
-def lex(dfa, duck, &block)
-    lex_cmd = _get_lexer(dfa, duck, &block)
-    catch :done do
-        while true
-            lex_cmd.call
-        end
+def lex(dfa, duck)
+    lexer = Lexer.new(dfa, duck)
+    while info = lexer.next
+        yield info[0], info[1], info[2]
     end
 end
