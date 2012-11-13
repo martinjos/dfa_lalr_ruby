@@ -1,5 +1,8 @@
 require 'set'
 
+# should probably derive from these at some point, and convert everything in
+# the tree - either when flattening, or else at initialization
+
 class Symbol
     # terminals - dromeDary camelCase or lower_case
     # I actually prefer to use lower_case for this, but I only
@@ -159,13 +162,17 @@ end
 
 class ParserDesc < Hash
     def initialize(hash)
-        self.merge! hash
+        if hash.size != 1
+            raise LalrCompileError, "Usage: ParserDesc.new :StartSymbol => { <parser-description> }"
+        end
+        @start_symbol = hash.keys[0]
+        self.merge! hash[@start_symbol]
     end
     
     # in effect, this is just augmenting each (sub-)rule with its nonterminal...
     # I may rethink this at some point
-    def flatten(start_token)
-        flat_desc = ParserDesc.new({ :_Start => [Rule.new(:_Start, [start_token])] })
+    def flatten
+        flat_desc = ParserDesc.new(@start_symbol => { :_Start => [Rule.new(:_Start, [@start_symbol])] })
         self.each do |nonterminal, expansions|
             if !nonterminal.non_terminal?
                 raise LalrCompileError, "Non-terminal symbol #{nonterminal} should be in CamelCase (Bactrian, not dromeDary)"
@@ -180,11 +187,11 @@ class ParserDesc < Hash
         return flat_desc
     end
 
-    def compile(start_token)
+    def compile
         if self.has_key? :_Start
             raise LalrCompileError, "LALR description already contains :_Start token (used internally)"
         end
-        fdesc = self.flatten(start_token)
+        fdesc = self.flatten
         start_rule = fdesc[:_Start][0]
         start_state = ParserState.new( [RuleState.new(start_rule, 0)] )
         start_state.complete(fdesc)
