@@ -1,7 +1,7 @@
 require 'set'
 
 def regexp(reg)
-    return reg.call(0)
+    return seq(reg, success(nil)).call(0)
 end
 
 # may lead to loops in blank transition graph...(as may opt and star)

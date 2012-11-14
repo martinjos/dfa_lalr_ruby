@@ -28,13 +28,10 @@ simple_chars = "|[]^()-"
 unary_op_chars = "*+?"
 special_chars = simple_chars + unary_op_chars + "\\"
 
-# this currently demonstrates a problem with the DFA compiler, which requires that the outer
-# structure be a sequence ending in a success node
-reg_nfa = regexp seq(alt(simple_char_alts(simple_chars),
-                         seq(basic_char_class(unary_op_chars), success(:unary_op)),
-                         seq(basic_inv_char_class(special_chars), success(:char)),
-                         seq(one("\\"), basic_char_class(special_chars), success(:char))), success(nil))
-
+reg_nfa = regexp alt(simple_char_alts(simple_chars),
+                     seq(basic_char_class(unary_op_chars), success(:unary_op)),
+                     seq(basic_inv_char_class(special_chars), success(:char)),
+                     seq(one("\\"), basic_char_class(special_chars), success(:char)))
 
 RegexpDFA = make_dfa(reg_nfa)
 
