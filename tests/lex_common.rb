@@ -1,2 +1,2 @@
-load 'tests/dfa_common.rb'
-load 'lex.rb'
+require 'tests/dfa_common.rb'
+require 'lex.rb'

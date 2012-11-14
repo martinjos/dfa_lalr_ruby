@@ -1,3 +1,6 @@
+require 'nfa'
+require 'dfa'
+
 # I know this is not really supporting "characters" yet, per se.
 # Only bytes. Just a bit of a demo.
 

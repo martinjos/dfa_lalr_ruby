@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-load 'tests/lalr_common.rb'
+require 'tests/lalr_common.rb'
 
 def check_canonical(x, y)
     assert(x .equal? y)

@@ -1,6 +1,6 @@
-load 'tests/common.rb'
-load 'lalr.rb'
-load 'regexp_parser.rb'
+require 'tests/common.rb'
+require 'lalr.rb'
+require 'regexp_parser.rb'
 
 ($s, $all) = RegexpLALR.compile
 $allhash = {}
