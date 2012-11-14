@@ -81,10 +81,12 @@ end
 class ReduceRule
     attr :nterm
     attr :size
+    attr :parent
     attr :next, true
-    def initialize(nterm, size)
+    def initialize(nterm, size, parent)
         @nterm = nterm
         @size = size
+        @parent = parent
     end
 end
 
@@ -92,11 +94,13 @@ class ParserContext < Set
 
     attr :shift_tab
     attr :reduce_tab
+    attr :reduce_lookup
 
     def initialize(desc, elems=[])
         @desc = desc
         @shift_tab = {}
         @reduce_tab = {}
+        @reduce_lookup = Hash.new {|h, k| h[k] = {} }
         super(elems)
     end
     
@@ -126,6 +130,9 @@ class ParserContext < Set
     def compile
         allhash = {}
         self.compile_rec(allhash)
+        allhash.each_key do |pc|
+            pc.final_setup
+        end
         return Set.new( allhash.keys )
     end
 
@@ -152,7 +159,7 @@ class ParserContext < Set
             if !@reduce_tab.has_key?(parent)
                 #puts " " * (stack.size-1) + "Reduce (#{red[0].nterm})"
                 # N.B: this is needed here to guard against infinite recursion
-                @reduce_tab[parent] = ReduceRule.new(red[0].nterm, red[0].exp.size)
+                @reduce_tab[parent] = ReduceRule.new(red[0].nterm, red[0].exp.size, parent)
                 next_state = parent.shift(red[0].nterm).compile_rec(all, stack[0 .. parent_pos])
                 @reduce_tab[parent].next = next_state
             else
@@ -161,6 +168,12 @@ class ParserContext < Set
         end
         if !@shift_tab.empty? && !@reduce_tab.empty?
             @desc.have_sr_conflict = true
+        end
+    end
+
+    def final_setup
+        @reduce_tab.each do |parent, rr|
+            @reduce_lookup[rr.size][parent] = rr
         end
     end
 
