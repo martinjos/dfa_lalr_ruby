@@ -21,5 +21,3 @@ rescue LexError => e
 end
 assert(tokens == [[:done, str1]])
 assert(errors == ["at EOF"] || (puts(errors) && false))
-
-safe

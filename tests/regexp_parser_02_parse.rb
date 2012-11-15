@@ -14,5 +14,6 @@ stream = FunctionLookahead.new {
 }
 parser = Parser.new(RegexpLALRStart, stream)
 
-puts str
-parser.debug
+#puts str
+final_state = parser.debug
+assert(final_state == [:_Start])

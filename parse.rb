@@ -23,21 +23,23 @@ class Parser
             if size < @states.size && hash.has_key?(@states[parent_idx])
                 rr = hash[@states[parent_idx]]
                 rr_idx = @state.reduce_tab.values.index(rr)
-                puts "Reduce \##{rr_idx} (size = #{size})"
+                #puts "Reduce \##{rr_idx} (size = #{size})"
                 @state = rr.next # think I might rename this to ReduceRule.state after all
                 @states = @states[0..parent_idx] + [rr.next]
                 @tokens = @tokens[0..parent_idx] + [rr.nterm]
                 return true
             end
         end
-        puts "Failed with #{@stream.peek}"
+        #puts "Finished with #{@stream.peek}"
         return false
     end
 
     def debug
         while progress
-            p @tokens
+            # do nothing
+            #p @tokens
         end
-        puts "Final state: #{@tokens.inspect}"
+        #puts "Final state: #{@tokens.inspect}"
+        return @tokens
     end
 end
