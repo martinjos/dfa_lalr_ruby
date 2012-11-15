@@ -136,22 +136,26 @@ class ParserContext < Set
         return Set.new( allhash.keys )
     end
 
-    def compile_rec(all, stack=[], reduces_done=Set.new)
+    def compile_rec(all, stack=[], reduces_done=Set.new, stack_done=Set.new)
         self.complete
         if !all.has_key? self
             all[self] = self
         end
-        all[self].compile_traverse(all, stack, reduces_done)
+        if stack_done.include?(stack + [self])
+            return all[self]
+        end
+        stack_done << (stack + [self])
+        all[self].compile_traverse(all, stack, reduces_done, stack_done)
         return all[self]
     end
 
-    def compile_traverse(all, stack, reduces_done)
+    def compile_traverse(all, stack, reduces_done, stack_done)
         stack += [self] # N.B: creates new Array object
         red = self.reductions
         raise LalrCompileError, "Reduce-reduce conflict" if red.size > 1
         self.shift_keys.each do |key|
             #puts " " * (stack.size-1) + "Shift #{key.is_a?(String) ? key : "(#{key})"}"
-            @shift_tab[key] = self.shift(key).compile_rec(all, stack, reduces_done)
+            @shift_tab[key] = self.shift(key).compile_rec(all, stack, reduces_done, stack_done)
         end
         if red.size > 0
             parent_pos = -red[0].exp.size - 1
@@ -163,7 +167,8 @@ class ParserContext < Set
                 # N.B: reduces_done guards against infinite recursion
                 # (still not sure this is the best way - seems very inefficient)
                 reduces_done << [self, parent]
-                next_state = parent.shift(red[0].nterm).compile_rec(all, stack[0 .. parent_pos], reduces_done)
+                next_state = parent.shift(red[0].nterm)
+                    .compile_rec(all, stack[0 .. parent_pos], reduces_done, stack_done)
                 reduces_done.delete [self, parent]
 
                 @reduce_tab[parent] = ReduceRule.new(red[0].nterm, red[0].exp.size, parent)
