@@ -10,7 +10,9 @@ class Parser
     end
 
     def progress
+        #puts "Got token #{@stream.peek}"
         if @state.shift_tab.has_key?(@stream.peek)
+            #puts "Shift"
             @state = @state.shift_tab[@stream.peek]
             @states << @state
             @tokens << @stream.next # not sure I like the stream paradigm I'm using here - error prone
@@ -18,14 +20,17 @@ class Parser
         end
         @state.reduce_lookup.each do |size, hash|
             parent_idx = -size - 1
-            if size < @states.size && hash.has_key? @states[parent_idx]
+            if size < @states.size && hash.has_key?(@states[parent_idx])
                 rr = hash[@states[parent_idx]]
+                rr_idx = @state.reduce_tab.values.index(rr)
+                puts "Reduce \##{rr_idx} (size = #{size})"
                 @state = rr.next # think I might rename this to ReduceRule.state after all
                 @states = @states[0..parent_idx] + [rr.next]
-                @tokens = @tokens[0...parent_idx] + [rr.nterm]
+                @tokens = @tokens[0..parent_idx] + [rr.nterm]
                 return true
             end
         end
+        puts "Failed with #{@stream.peek}"
         return false
     end
 
@@ -33,6 +38,6 @@ class Parser
         while progress
             p @tokens
         end
-        print "Final state: #{@tokens.inspect}"
+        puts "Final state: #{@tokens.inspect}"
     end
 end

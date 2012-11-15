@@ -9,8 +9,8 @@ def check_canonical(x, y)
 end
 
 # these states (about to reduce :Alt => :Seq) should be the same object
-s1 = $s.reduce_tab.values[0].next
-s2 = $s.reduce_tab.values[0].next.shift_tab[:char].reduce_tab.values[0].next.reduce_tab.values[0].next
+s1 = $s.re(0)
+s2 = $s.re(0).sh(:char).re(0).re(2, $s)
 check_canonical(s1, s2)
 
 safe

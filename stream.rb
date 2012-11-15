@@ -5,17 +5,17 @@ class FunctionLookahead
     end
 
     def next
-        if next
+        if @next
             res = @next
             @next = nil
             return res
         end
-        return p.call
+        return @p.call
     end
 
     def peek
         if !@next
-            @next = p.call
+            @next = @p.call
         end
         return @next
     end

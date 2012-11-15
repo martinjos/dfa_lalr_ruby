@@ -1,5 +1,6 @@
 require 'nfa'
 require 'dfa'
+require 'lalr'
 
 # I know this is not really supporting "characters" yet, per se.
 # Only bytes. Just a bit of a demo.
@@ -38,7 +39,7 @@ reg_nfa = regexp alt(simple_char_alts(simple_chars),
 
 RegexpDFA = make_dfa(reg_nfa)
 
-RegexpLALR = ParserDesc.new :Alt => {
+reg_lalr_desc = ParserDesc.new :Alt => {
     :Alt => [[:Seq],
              [:Alt, "|", :Seq]],
     :Seq => [[],
@@ -53,3 +54,5 @@ RegexpLALR = ParserDesc.new :Alt => {
     :ClassItem => [[:char],
                    [:char, "-", :char]],
 }
+
+(RegexpLALRStart, RegexpLALRStates) = reg_lalr_desc.compile

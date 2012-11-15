@@ -136,31 +136,37 @@ class ParserContext < Set
         return Set.new( allhash.keys )
     end
 
-    def compile_rec(all, stack=[])
+    def compile_rec(all, stack=[], reduces_done=Set.new)
         self.complete
         if !all.has_key? self
             all[self] = self
         end
-        all[self].compile_traverse(all, stack)
+        all[self].compile_traverse(all, stack, reduces_done)
         return all[self]
     end
 
-    def compile_traverse(all, stack)
+    def compile_traverse(all, stack, reduces_done)
         stack += [self] # N.B: creates new Array object
         red = self.reductions
         raise LalrCompileError, "Reduce-reduce conflict" if red.size > 1
         self.shift_keys.each do |key|
             #puts " " * (stack.size-1) + "Shift #{key.is_a?(String) ? key : "(#{key})"}"
-            @shift_tab[key] = self.shift(key).compile_rec(all, stack)
+            @shift_tab[key] = self.shift(key).compile_rec(all, stack, reduces_done)
         end
         if red.size > 0
             parent_pos = -red[0].exp.size - 1
             parent = stack[parent_pos]
-            if !@reduce_tab.has_key?(parent)
+            # Don't let it do the same reduction with the same parent
+            # on the same construction branch
+            if !reduces_done.include?([self, parent])
                 #puts " " * (stack.size-1) + "Reduce (#{red[0].nterm})"
-                # N.B: this is needed here to guard against infinite recursion
+                # N.B: reduces_done guards against infinite recursion
+                # (still not sure this is the best way - seems very inefficient)
+                reduces_done << [self, parent]
+                next_state = parent.shift(red[0].nterm).compile_rec(all, stack[0 .. parent_pos], reduces_done)
+                reduces_done.delete [self, parent]
+
                 @reduce_tab[parent] = ReduceRule.new(red[0].nterm, red[0].exp.size, parent)
-                next_state = parent.shift(red[0].nterm).compile_rec(all, stack[0 .. parent_pos])
                 @reduce_tab[parent].next = next_state
             else
                 #puts " " * (stack.size-1) + "Guarded against reduction (#{red[0].nterm})"
@@ -223,14 +229,6 @@ class ParserContext < Set
             new_state.add RuleState.new(rs.rule, rs.pos + 1)
         }
         return new_state
-    end
-
-    def reduce
-        r = reductions
-        raise LalrCompileError, "Cannot reduce" if r.size == 0
-        raise LalrCompileError, "Reduce-reduce conflict" if r.size > 1
-        r = r[0]
-        return shift(r.nterm) # hehe! shift == reduce! all connected is, little one...
     end
 end
 
