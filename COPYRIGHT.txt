@@ -10,4 +10,5 @@ repository hosting site "github.com":
 
 https://github.com/martincode
 
-Please contact me at msidaway@gmail.com for further information.
+Please contact me at msidaway@gmail.com for further information regarding this
+repository.
