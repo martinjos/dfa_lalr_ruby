@@ -1,0 +1,13 @@
+Copyright 2012, Martin Sidaway
+
+This entire Git repository, including all content of all versions of all files
+contained herein, is subject to the above copyright notice, except where
+otherwise explicitly noted within.
+
+The official source for this repository is listed at the following web address
+as one of the repositories belonging to the account "martincode" at the Git
+repository hosting site "github.com":
+
+https://github.com/martincode
+
+Please contact me at msidaway@gmail.com for further information.
