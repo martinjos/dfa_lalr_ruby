@@ -7,7 +7,7 @@ otherwise explicitly noted within.
 The official source for this repository is available at the following web
 address:
 
-https://github.com/martincode/dfa_lalr_ruby
+https://github.com/martinjos/dfa_lalr_ruby
 
 Please contact me at msidaway@gmail.com for further information regarding this
 repository.
