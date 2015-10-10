@@ -1,6 +1,8 @@
-require 'tests/regexp_parser_common'
-require 'parse'
-require 'stream'
+#!/usr/bin/env ruby
+
+require_relative 'regexp_parser_common'
+require_relative '../parse'
+require_relative '../stream'
 
 str = "123|foo\\||b(a(b|c)d)r\\**"
 lexer = Lexer.new(RegexpDFA, str)

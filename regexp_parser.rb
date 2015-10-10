@@ -1,6 +1,6 @@
-require 'nfa'
-require 'dfa'
-require 'lalr'
+require_relative 'nfa'
+require_relative 'dfa'
+require_relative 'lalr'
 
 # I know this is not really supporting "characters" yet, per se.
 # Only bytes. Just a bit of a demo.

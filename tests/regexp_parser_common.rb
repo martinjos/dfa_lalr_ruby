@@ -1,2 +1,2 @@
-require 'tests/lex_common.rb'
-require 'tests/lalr_common.rb'
+require_relative 'lex_common'
+require_relative 'lalr_common'

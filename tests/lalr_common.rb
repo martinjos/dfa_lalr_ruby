@@ -1,7 +1,7 @@
-require 'tests/common.rb'
-require 'lalr.rb'
-require 'lalr_debug.rb'
-require 'regexp_parser.rb'
+require_relative 'common'
+require_relative '../lalr'
+require_relative '../lalr_debug'
+require_relative '../regexp_parser'
 
 ($s, $all) = [RegexpLALRStart, RegexpLALRStates]
 $allhash = {}

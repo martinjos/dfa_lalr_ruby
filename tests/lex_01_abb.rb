@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'tests/lex_common.rb'
+require_relative 'lex_common'
 
 str1 = "aaabbbbbabb"
 tokens = []
